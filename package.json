@@ -1,0 +1,49 @@
+{
+  "name": "@commercus/storefront",
+  "version": "0.1.0",
+  "description": "The storefront API of the Commercus webshop platform: catalogue, live prices and stock, the cart and the hosted checkout. For any frontend; Preact and React hooks and web components included.",
+  "license": "MIT",
+  "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/commercus/storefront.git" },
+  "homepage": "https://github.com/commercus/storefront#readme",
+  "bugs": "https://github.com/commercus/storefront/issues",
+  "keywords": ["commercus", "webshop", "ecommerce", "storefront", "cart", "checkout", "headless"],
+  "sideEffects": ["./dist/elements.js"],
+  "files": ["dist", "README.md", "LICENSE"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./hooks/preact": { "types": "./dist/hooks/preact.d.ts", "import": "./dist/hooks/preact.js" },
+    "./hooks/react": { "types": "./dist/hooks/react.d.ts", "import": "./dist/hooks/react.js" },
+    "./elements": { "types": "./dist/elements.d.ts", "import": "./dist/elements.js" }
+  },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generate": "openapi-typescript api/storefront.yaml -o src/generated/storefront.ts",
+    "sync-api": "node scripts/sync-api.mjs && npm run generate",
+    "check-generated": "npm run generate && git diff --exit-code src/generated",
+    "changeset": "changeset",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "peerDependencies": {
+    "preact": ">=10.19",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "preact": { "optional": true },
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@types/react": "^19.2.2",
+    "happy-dom": "^20.0.10",
+    "openapi-typescript": "^7.13.0",
+    "preact": "^10.27.2",
+    "react": "^19.2.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
+  }
+}

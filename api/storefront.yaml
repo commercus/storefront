@@ -1,0 +1,722 @@
+openapi: 3.1.0
+info:
+  title: Commercus Storefront API
+  version: 1.0.0
+servers:
+- url: https://api.commercus.nl
+paths:
+  /v1/carts:
+    post:
+      operationId: create
+      parameters:
+      - description: "Makes a retry safe: the same key gets the same cart"
+        in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartView"
+          description: Created
+      security:
+      - shopKey: []
+      summary: Starts an empty cart; send an Idempotency-Key so a retried request
+        does not start a second
+      tags:
+      - Cart
+  /v1/carts/{token}:
+    get:
+      operationId: get_1
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartView"
+          description: OK
+      security:
+      - shopKey: []
+      tags:
+      - Cart
+  /v1/carts/{token}/checkout:
+    post:
+      operationId: start
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      - in: header
+        name: Origin
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutStart"
+          description: OK
+      security:
+      - shopKey: []
+      summary: Starts the hosted checkout of a cart that is ready; the same cart gets
+        the same checkout
+      tags:
+      - Checkout
+  /v1/carts/{token}/items:
+    post:
+      operationId: add
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      - description: "Makes a retry safe: the same key adds once"
+        in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddItemRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartView"
+          description: OK
+      security:
+      - shopKey: []
+      summary: "Adds a variant, to its line if the cart has one; 409 when there is\
+        \ not enough stock"
+      tags:
+      - Cart
+  /v1/carts/{token}/items/{lineId}:
+    delete:
+      operationId: remove
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: lineId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartView"
+          description: OK
+      security:
+      - shopKey: []
+      tags:
+      - Cart
+    patch:
+      operationId: setQuantity
+      parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: lineId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuantityRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartView"
+          description: OK
+      security:
+      - shopKey: []
+      summary: Sets a line's quantity; 0 removes the line
+      tags:
+      - Cart
+  /v1/categories:
+    get:
+      operationId: categories
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorefrontCategory"
+          description: OK
+      security:
+      - shopKey: []
+      tags:
+      - Catalog
+  /v1/orders/{id}:
+    get:
+      operationId: get
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuyerOrder"
+          description: OK
+      security:
+      - shopKey: []
+      summary: "An order for its buyer, with the token the checkout gave the thank-you\
+        \ page"
+      tags:
+      - Orders
+  /v1/orders/{id}/invoice:
+    get:
+      operationId: pdf
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: byte
+          description: OK
+      security:
+      - shopKey: []
+      summary: "The order's invoice as a PDF, for its buyer; 404 until it is issued,\
+        \ shortly after the payment"
+      tags:
+      - Orders
+  /v1/ping:
+    get:
+      operationId: ping
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pong"
+          description: OK
+      summary: Checks that the storefront API is reachable
+      tags:
+      - Ping
+  /v1/products:
+    get:
+      operationId: products
+      parameters:
+      - in: query
+        name: category
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorefrontProductSummary"
+          description: OK
+      security:
+      - shopKey: []
+      summary: "The products for sale, by title; optionally those in one category"
+      tags:
+      - Catalog
+  /v1/products/{slug}:
+    get:
+      operationId: product
+      parameters:
+      - in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorefrontProduct"
+          description: OK
+      security:
+      - shopKey: []
+      tags:
+      - Catalog
+  /v1/shop:
+    get:
+      operationId: shop
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorefrontShop"
+          description: OK
+      security:
+      - shopKey: []
+      summary: The shop the public key belongs to
+      tags:
+      - Shop
+  /v1/variants:
+    get:
+      operationId: variants
+      parameters:
+      - in: query
+        name: id
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VariantPrice"
+          description: OK
+      security:
+      - shopKey: []
+      summary: "Today's price and stock of variants, for a static page that may be\
+        \ older; unknown ids are left out"
+      tags:
+      - Catalog
+components:
+  schemas:
+    AddItemRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          maximum: 99
+          minimum: 1
+        variantId:
+          type: string
+          format: uuid
+      required:
+      - quantity
+      - variantId
+    BuyerOrder:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLineResponse"
+        number:
+          type: string
+        shippingGross:
+          type: number
+        shippingMethod:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING_PAYMENT
+          - PAID
+          - SHIPPED
+          - CANCELLED
+          - PARTIALLY_REFUNDED
+          - REFUNDED
+        subtotalGross:
+          type: number
+        totalGross:
+          type: number
+        totalVat:
+          type: number
+        trackingCode:
+          type: string
+        trackingUrl:
+          type: string
+      required:
+      - lines
+      - number
+      - shippingGross
+      - shippingMethod
+      - status
+      - subtotalGross
+      - totalGross
+      - totalVat
+    CartLineView:
+      type: object
+      properties:
+        available:
+          type: integer
+          format: int32
+        id:
+          type: string
+          format: uuid
+        imageUrl:
+          type: string
+        lineTotal:
+          type: number
+        problem:
+          type: string
+          enum:
+          - UNAVAILABLE
+          - INSUFFICIENT_STOCK
+        productTitle:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+        sku:
+          type: string
+        unitPrice:
+          type: number
+        variantId:
+          type: string
+          format: uuid
+        variantTitle:
+          type: string
+      required:
+      - id
+      - quantity
+      - variantId
+    CartView:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
+        itemCount:
+          type: integer
+          format: int32
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartLineView"
+        ready:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - CHECKED_OUT
+        subtotal:
+          type: number
+        token:
+          type: string
+      required:
+      - expiresAt
+      - itemCount
+      - lines
+      - ready
+      - status
+      - subtotal
+      - token
+    CheckoutStart:
+      type: object
+      properties:
+        checkoutUrl:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - checkoutUrl
+      - expiresAt
+    ImageResponse:
+      type: object
+      properties:
+        alt:
+          type: string
+        height:
+          type: integer
+          format: int32
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        width:
+          type: integer
+          format: int32
+      required:
+      - height
+      - id
+      - url
+      - width
+    OptionResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+      required:
+      - name
+      - values
+    OrderLineResponse:
+      type: object
+      properties:
+        lineGross:
+          type: number
+        productTitle:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+        sku:
+          type: string
+        unitGross:
+          type: number
+        variantId:
+          type: string
+          format: uuid
+        variantTitle:
+          type: string
+        vatCode:
+          type: string
+          enum:
+          - HIGH
+          - LOW
+          - ZERO
+          - EXEMPT
+        vatPercent:
+          type: number
+      required:
+      - lineGross
+      - productTitle
+      - quantity
+      - sku
+      - unitGross
+      - variantId
+      - vatCode
+    Pong:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    QuantityRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          maximum: 99
+          minimum: 0
+      required:
+      - quantity
+    StorefrontCategory:
+      type: object
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+        parent:
+          type: string
+        position:
+          type: integer
+          format: int32
+        slug:
+          type: string
+      required:
+      - name
+      - position
+      - slug
+    StorefrontProduct:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        id:
+          type: string
+          format: uuid
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImageResponse"
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionResponse"
+        slug:
+          type: string
+        title:
+          type: string
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorefrontVariant"
+      required:
+      - categories
+      - id
+      - images
+      - options
+      - slug
+      - title
+      - variants
+    StorefrontProductSummary:
+      type: object
+      properties:
+        available:
+          type: boolean
+        categories:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+          format: uuid
+        image:
+          $ref: "#/components/schemas/ImageResponse"
+        priceFrom:
+          type: number
+        slug:
+          type: string
+        title:
+          type: string
+      required:
+      - available
+      - categories
+      - id
+      - priceFrom
+      - slug
+      - title
+    StorefrontShop:
+      type: object
+      properties:
+        brandColor:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - LIVE
+          - SUSPENDED
+        termsUrl:
+          type: string
+      required:
+      - name
+      - status
+    StorefrontVariant:
+      type: object
+      properties:
+        available:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+        optionValues:
+          type: array
+          items:
+            type: string
+        priceGross:
+          type: number
+        sku:
+          type: string
+        stock:
+          type: integer
+          format: int32
+        title:
+          type: string
+      required:
+      - available
+      - id
+      - optionValues
+      - priceGross
+      - sku
+    VariantPrice:
+      type: object
+      properties:
+        available:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+        priceGross:
+          type: number
+        productId:
+          type: string
+          format: uuid
+        stock:
+          type: integer
+          format: int32
+      required:
+      - available
+      - id
+      - priceGross
+      - productId
+  securitySchemes:
+    bearer:
+      bearerFormat: JWT
+      description: An access token of Keycloak realm commercus. Members of several
+        shops name one in X-Shop-Id.
+      scheme: bearer
+      type: http
+    shopKey:
+      description: "The shop's public key (pk_...); it is in the site's HTML, so it\
+        \ identifies the shop and grants nothing more."
+      in: header
+      name: X-Shop-Key
+      type: apiKey
