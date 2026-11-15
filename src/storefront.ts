@@ -61,9 +61,10 @@ export interface Storefront {
   downloadInvoice(id: string, token: string, filename?: string): Promise<void>;
 }
 
+/** The browser's `localStorage`; never Node's own (which warns when it is touched), so `window` first. */
 function browserStorage(): TokenStorage | null {
   try {
-    return typeof localStorage === "undefined" ? null : localStorage;
+    return typeof window === "undefined" ? null : window.localStorage;
   } catch {
     return null;
   }
