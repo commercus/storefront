@@ -1,5 +1,5 @@
-# Publishes to npm when a version tag (v0.1.1) is pushed: npm trusted publishing, which adds
-# provenance by itself, so no npm token lives here. On npmjs, the package's trusted publisher is this
+# Publishes to npm when a version tag (v0.1.2) is pushed, through npm trusted publishing, so no npm
+# token lives here. --provenance stays: 0.1.1 went out without provenance when it was left out. On npmjs, the package's trusted publisher is this
 # repository and this workflow file.
 name: release
 on:
@@ -28,5 +28,5 @@ jobs:
           if npm view "$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")" version >/dev/null 2>&1; then
             echo "This version is already on npm"
           else
-            npm publish --access public
+            npm publish --provenance --access public
           fi
