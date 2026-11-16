@@ -1,6 +1,6 @@
 # Publishes to npm when a version tag (v0.1.2) is pushed, through npm trusted publishing, so no npm
-# token lives here. --provenance stays: 0.1.1 went out without provenance when it was left out. On npmjs, the package's trusted publisher is this
-# repository and this workflow file.
+# token lives here. --provenance stays: 0.1.1 went out without provenance when it was left out.
+# On npmjs, the package's trusted publisher is this repository and this workflow file.
 name: release
 on:
   push:
