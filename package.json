@@ -1,6 +1,6 @@
 {
   "name": "@commercus/storefront",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The storefront API of the Commercus webshop platform: catalogue, live prices and stock, the cart and the hosted checkout. For any frontend; Preact and React hooks and web components included.",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
-# Publishes to npm when a version tag (v0.1.0) is pushed: npm trusted publishing with provenance, so
-# no npm token lives here. On npmjs, the package's trusted publisher is this repository and this
-# workflow file.
+# Publishes to npm when a version tag (v0.1.1) is pushed: npm trusted publishing, which adds
+# provenance by itself, so no npm token lives here. On npmjs, the package's trusted publisher is this
+# repository and this workflow file.
 name: release
 on:
   push:
@@ -22,4 +22,11 @@ jobs:
       - run: npm ci
       - name: The tag is the package's version
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
-      - run: npm publish --provenance --access public
+      # A tag for a version already on npm (0.1.0 was published by hand) is left alone.
+      - name: Publish
+        run: |
+          if npm view "$(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")" version >/dev/null 2>&1; then
+            echo "This version is already on npm"
+          else
+            npm publish --access public
+          fi
